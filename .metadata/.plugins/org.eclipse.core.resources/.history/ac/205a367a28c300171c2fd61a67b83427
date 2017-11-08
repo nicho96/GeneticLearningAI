@@ -1,0 +1,13 @@
+package ca.nicho.neuralnet;
+
+public abstract class NEAT {
+	
+	private int innovationCount;
+	
+	public abstract boolean mutate(NeuralNetwork nn);
+	
+	public abstract NeuralNetwork crossover(NeuralNetwork p1, NeuralNetwork p2);
+	
+	public abstract NeuralNetwork selection();
+	
+}

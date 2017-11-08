@@ -1,0 +1,60 @@
+package ca.nicho.neuralnet;
+
+import java.util.Random;
+
+public class DefaultNEAT extends NEAT {
+
+	private int speciesCapacity = 50;
+	private Random random = new Random();
+	
+	@Override
+	public void crossoverGeneration() {
+		int bredCount = 0;
+		while(bredCount < speciesCapacity){
+			NeuralNetwork nn1 = networks.get(random.nextInt(networks.size())).max;
+			NeuralNetwork nn2 = null;
+			while(nn2 == null || nn2 == nn1){
+				nn2 = networks.get(random.nextInt(networks.size())).max;
+			}
+			NeuralNetwork child = this.breedNetwork(nn1, nn2);
+			double dev = Math.min(getDeviation(child, nn1), getDeviation(child, nn2));
+			if(dev > DEVIATION_THRESHOLD){
+				this.createNewSpecies(child);
+			}
+			bredCount++;
+		}
+	}
+
+	@Override
+	public void simulateGeneration() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mutate(NeuralNetwork nn) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public NeuralNetwork crossover(NeuralNetwork p1, NeuralNetwork p2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void selection() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@FunctionalInterface
+	public interface SimulateDelegate {
+
+		void simulateNetwork(NeuralNetwork network);
+		
+	}
+	
+
+}

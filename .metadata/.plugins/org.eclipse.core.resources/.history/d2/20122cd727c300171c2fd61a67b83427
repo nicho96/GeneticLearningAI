@@ -1,0 +1,11 @@
+package ca.nicho.neuralnet;
+
+public abstract class NEAT {
+
+	private NEAT neat;
+	
+	public NEAT(NeuralNetwork nn){
+		
+	}
+	
+}

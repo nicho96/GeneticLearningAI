@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
+import ca.nicho.neuralnet.DefaultNEAT.SimulateDelegate;
+
 public class Population {
 
 	public static final File DIR_PATH = new File("networks/");
@@ -32,6 +34,7 @@ public class Population {
 		
 	}
 	
+	@Deprecated
 	public Population(int capacity, NeuralNetwork net, SimulateDelegate delegate){
 		
 		this.simulateDelegate = delegate;

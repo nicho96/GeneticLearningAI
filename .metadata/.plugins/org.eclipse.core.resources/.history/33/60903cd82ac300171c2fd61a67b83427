@@ -1,0 +1,43 @@
+package ca.nicho.neuralnet;
+
+public class DefaultNEAT extends NEAT {
+
+	@Override
+	public void crossoverGeneration() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void simulateGeneration() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mutate(NeuralNetwork nn) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public NeuralNetwork crossover(NeuralNetwork p1, NeuralNetwork p2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void selection() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@FunctionalInterface
+	public interface SimulateDelegate {
+
+		void simulateNetwork(NeuralNetwork network);
+		
+	}
+	
+
+}

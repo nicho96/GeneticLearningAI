@@ -1,0 +1,57 @@
+package ca.nicho.neuralnet;
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+public abstract class NEAT {
+	
+	protected int innovationCount = 0;
+	protected int neuronCount = 0;
+	
+	protected ArrayList<NeuralNetwork> networks = new ArrayList<NeuralNetwork>();
+	
+	public void nextGeneration(){
+		
+		for(NeuralNetwork nn : this.networks){
+			mutate(nn);
+		}
+		
+		this.simulateGeneration();
+		
+		Collections.sort(networks);
+		
+	}
+	
+	/**
+	 * Handles crossing over the entire generation
+	 */
+	public abstract void crossoverGeneration();
+	
+	/**
+	 * Handles simulating the generation
+	 */
+	public abstract void simulateGeneration();
+	
+	/**
+	 * Mutates a neural network.
+	 * 
+	 * Remember to use the innovationCount and neuronCount to identify changes to the network.
+	 * New evolutions can be kept tracked of and seperated from old ones during crossover.
+	 * @param nn The neural network being mutated
+	 */
+	public abstract void mutate(NeuralNetwork nn);
+	
+	/**
+	 * Combine two networks together to form a child
+	 * @param p1 The first parent network
+	 * @param p2 The second parent network
+	 * @return the child network as a combination of both parents
+	 */
+	public abstract NeuralNetwork crossover(NeuralNetwork p1, NeuralNetwork p2);
+	
+	/**
+	 * Handles the selection of what networks will move on to the next generation
+	 */
+	public abstract void selection();
+	
+}

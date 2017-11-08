@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
+import ca.nicho.neuralnet.DefaultNEAT.SimulateDelegate;
+
 public class Species implements Comparable<Species> {
 
 	public static final int KILL_THRESHOLD = 4; //The amount of the population that dies after each generation (e.g 4 will kill off 3/4 of the population)

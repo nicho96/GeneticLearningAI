@@ -1,0 +1,109 @@
+package ca.nicho.neuralnet;
+
+import java.util.Random;
+
+public class DefaultNEAT extends NEAT {
+
+	private int speciesCapacity = 50;
+	private Random random = new Random();
+	
+	@Override
+	public void crossoverGeneration() {
+		int bredCount = 0;
+		while(bredCount < speciesCapacity){
+			NeuralNetwork nn1 = networks.get(random.nextInt(networks.size())).max;
+			NeuralNetwork nn2 = null;
+			while(nn2 == null || nn2 == nn1){
+				nn2 = networks.get(random.nextInt(networks.size())).max;
+			}
+			NeuralNetwork child = this.crossover(nn1, nn2);
+			double dev = Math.min(getDeviation(child, nn1), getDeviation(child, nn2));
+			if(dev > DEVIATION_THRESHOLD){
+				this.createNewSpecies(child);
+			}
+			bredCount++;
+		}
+	}
+
+	@Override
+	public void simulateGeneration() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mutate(NeuralNetwork nn) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public NeuralNetwork crossover(NeuralNetwork fittest, NeuralNetwork other) {
+		//Ensures variable fittest is indeed the fittest
+			if(fittest.score < other.score){
+				NeuralNetwork tmp = fittest;
+				fittest = other;
+				other = tmp;
+			}
+			
+			boolean equal = fittest.score == other.score;
+			
+			NeuralNetwork clone = new NeuralNetwork(fittest);
+			
+			//Mix any new innovations from the other network
+			long max = Math.max(fittest.maxInnovation, other.maxInnovation);
+			for(long i = 0; i < max; i++){
+				if(fittest.axonsMap.containsKey(i) && other.axonsMap.containsKey(i)){
+					
+					if(equal){
+						clone.axonsMap.get(i).weight = (random.nextBoolean()) ? fittest.axonsMap.get(i).weight : other.axonsMap.get(i).weight;
+					}
+					
+					//Weight is inherited by the most fit network, but whether or not it's enabled can be inherited by either (by chance)
+					clone.axonsMap.get(i).enabled = (random.nextBoolean()) ? fittest.axonsMap.get(i).enabled : other.axonsMap.get(i).enabled;
+					
+				}else if(other.axonsMap.containsKey(i)){
+					Axon gene = other.axonsMap.get(i);
+					
+					Neuron node = clone.neuronsMap.get(gene.output.neuronID);
+					
+					//If the gene's output neuron doesn't exist, create it
+					if(node == null){
+						node = clone.createNeuron(clone.layers.get(gene.output.layer.index), gene.output.neuronID);
+					}
+					
+					//Make the connection
+					clone.connectNeurons(clone.neuronsMap.get(gene.input.neuronID), node, gene.weight, gene.innovation);
+					
+				}else{
+					//Innovation does not exist in either networks. Ignore
+				}
+			}
+			
+			//For any disabled axons, 25% chance of being reenabled (https://www.cs.cmu.edu/afs/cs/project/jair/pub/volume21/stanley04a-html/node3.html)
+			for(Axon a : clone.axons){
+				if(!a.enabled){
+					if(random.nextDouble() < 0.25){
+						a.enabled = true;
+					}
+				}
+			}
+			
+			return clone;
+	}
+
+	@Override
+	public void selection() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@FunctionalInterface
+	public interface SimulateDelegate {
+
+		void simulateNetwork(NeuralNetwork network);
+		
+	}
+	
+
+}

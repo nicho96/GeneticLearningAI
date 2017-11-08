@@ -1,8 +1,8 @@
 package ca.nicho.xor;
 
+import ca.nicho.neuralnet.DefaultNEAT;
 import ca.nicho.neuralnet.NeuralNetwork;
 import ca.nicho.neuralnet.Screen;
-import ca.nicho.neuralnet.SimulateDelegate;
 
 public class XORAI {
 	
@@ -29,7 +29,7 @@ public class XORAI {
 		
 	}
 	
-	private static SimulateDelegate delegate = (NeuralNetwork network) -> {
+	private static DefaultNEAT.SimulateDelegate delegate = (NeuralNetwork network) -> {
 		double score = 0;
 		
 		for(int i = 0; i < 20; i++){

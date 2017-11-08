@@ -1,0 +1,9 @@
+package ca.nicho.neuralnet;
+
+public abstract class NEAT {
+	
+	public abstract boolean mutate();
+	
+	public abstract
+	
+}

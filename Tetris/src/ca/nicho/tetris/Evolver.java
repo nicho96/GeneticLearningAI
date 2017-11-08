@@ -1,12 +1,13 @@
 package ca.nicho.tetris;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import ca.nicho.neuralnet.DefaultNEAT;
 import ca.nicho.neuralnet.NeuralNetwork;
 import ca.nicho.neuralnet.Population;
-import ca.nicho.neuralnet.SimulateDelegate;
 import ca.nicho.neuralnet.Species;
 import ca.nicho.tetris.controller.PerspectiveNeuralNetworkController;
 
@@ -21,70 +22,39 @@ public class Evolver {
 	public boolean isPaused = false;
 	
 	public Evolver(){
-		
-		//new Thread(inputThread).start();
-		
+				
 		NeuralNetwork origin = new NeuralNetwork(PerspectiveNeuralNetworkController.INPUT_SIZE, 3, 1);
 		
-		Population p = new Population(100, origin, delegate);
-		while(true){
-			p.simulateGeneration();
-		}
+		DefaultNEAT neat = new DefaultNEAT(origin, delegate);
 
+		int generation = 0;
+		while(true){
+			generation++;
+			System.out.println("==== Current Generation: " + generation + " ====");
+			neat.nextGeneration();
+			this.save(neat.getMaxNetwork());
+		}
 		
 	}
 	
-	private SimulateDelegate delegate = (NeuralNetwork network) -> {
+	private DefaultNEAT.SimulateDelegate delegate = (NeuralNetwork network) -> {
 		Board b = new Board(Evolver.BOARD_SEED);
 		b.setController(new PerspectiveNeuralNetworkController(b, network));
 		b.simulate();
 	};
 	
-	public void runSimulation(){
-		
-		if(isPaused){
-			isPaused = false;
-		}
-		
-		while(!isPaused){
-			
-			int bestScore = 0;
-			Species best = null;
-			
-			for(Species genome : genomes){
-				genome.nextGeneration();
-				if(bestScore < genome.max.score){
-					bestScore = genome.max.score;
-					best = genome;
-				}
+	private void save(NeuralNetwork nn){
+		File f = new File(DIR_PATH, "test.dat");
+		if(!f.exists()){
+			f.mkdirs();
+			try {
+				f.createNewFile();
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+				return;
 			}
-			
-			System.out.println("Generation: " + best.generation + " - Fittest: " + best.max + ", sum: " + best.max.generateSum());
-			
-			best.max.save(new File(DIR_PATH, "1layers.dat"));
-			
 		}
+		nn.save(f);
 	}
-	
-	public void pauseSimulation(){
-		isPaused = true;
-	}
-	
-	private Scanner sc = new Scanner(System.in);
-	
-	Runnable inputThread = () -> {
-		System.out.print("> ");
-		String input = sc.nextLine();
-		if(input.toLowerCase().equals("p")){
-			this.pauseSimulation();
-			System.out.println("Will pause after simulation cycle ends.");
-		}else if(input.toLowerCase().equals("s")){
-			this.runSimulation();
-			System.out.println("Resuming iterations");
-		}else if(input.toLowerCase().equals("e")){
-			sc.close();
-			System.out.println("Will close after simulation cycle ends.");
-		}
-	};
 	
 }
