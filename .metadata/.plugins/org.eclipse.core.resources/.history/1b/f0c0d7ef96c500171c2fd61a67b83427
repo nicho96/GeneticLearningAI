@@ -1,0 +1,11 @@
+package ca.nicho.neat;
+
+public class Innovation {
+
+	public innovationCount = innovationCount;
+	
+	public Innovation(long innovationCount){
+		
+	}
+	
+}

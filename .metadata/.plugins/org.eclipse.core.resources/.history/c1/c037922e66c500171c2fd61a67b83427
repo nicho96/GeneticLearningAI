@@ -1,0 +1,28 @@
+package ca.nicho.neat;
+
+import ca.nicho.neat.DefaultNEAT.SimulateDelegate;
+import ca.nicho.neuralnet.NeuralNetwork;
+
+public class SpeciationNEAT extends DefaultNEAT {
+
+	public SpeciationNEAT(NeuralNetwork origin, SimulateDelegate simulateDelegate){
+		//Start by populating the networks with the origin network (and clones of it)
+		
+		//Prepare the origin inputs (keeps the neuronCount accurate)
+		for(int i = 0; i < origin.inputs.length; i++){
+			origin.inputs[i] = origin.createNeuron(origin.layers.get(0), this.neuronCount++);
+		}
+		
+		//Prepare the origin outputs (keeps the neuronCount accurate)
+		for(int i = 0; i < origin.outputs.length; i++){
+			origin.outputs[i] = origin.createNeuron(origin.outputLayer, this.neuronCount++);
+		}
+		
+		networks.add(origin);
+		for(int i = 0; i < 9; i++){
+			networks.add(new NeuralNetwork(origin));
+		}
+		this.simulateDelegate = simulateDelegate;
+		
+	}
+}

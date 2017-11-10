@@ -1,0 +1,42 @@
+package ca.nicho.neat;
+
+import ca.nicho.neuralnet.Axon;
+import ca.nicho.neuralnet.NeuralNetwork;
+
+public class SpeciationNEAT extends DefaultNEAT {
+
+	public static double[] VARIATION_WEIGHTS = {1, 1, 1};
+	
+	public SpeciationNEAT(NeuralNetwork origin, SimulateDelegate simulateDelegate){
+		super(origin, simulateDelegate);
+	}
+	
+	public double getVariation(NeuralNetwork n1, NeuralNetwork n2){
+		
+		double N = Math.max(n1.axons.size(), n2.axons.size());
+		
+		double same = 0;
+		double d_weight = 0;
+		
+		double disjoint = 0;
+		double excess = 0;
+		
+		long n1_max = n1.axons.get(n1.axons.size() - 1).innovation;
+		long n2_max = n2.axons.get(n2.axons.size() - 1).innovation;
+		
+		//Count the excess, disjoint and matching genes from n1's perspective
+		for(Axon a1 : n1.axons){
+			Axon a2 = n2.axonsMap.get(a1.innovation);
+			if(a2 == null){
+				if(a1.innovation > n2_max) excess += 1;
+				else disjoint += 1;
+			}else{
+				same += 1;
+				d_weight += (a1.weight - a2.weight);
+			}
+		}
+		
+		return 0;
+	}
+	
+}

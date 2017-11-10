@@ -1,0 +1,42 @@
+package ca.nicho.xor;
+
+import ca.nicho.neat.DefaultNEAT;
+import ca.nicho.neat.SpeciationNEAT;
+import ca.nicho.neuralnet.NeuralNetwork;
+import ca.nicho.neuralnet.Screen;
+import ca.nicho.tetris.controller.PerspectiveNeuralNetworkController;
+
+public class XORAI {
+	
+	public static void main(String[] s){
+		
+		NeuralNetwork origin = new NeuralNetwork(PerspectiveNeuralNetworkController.INPUT_SIZE, 3, 4);
+		
+		SpeciationNEAT neat = new SpeciationNEAT(origin, delegate);
+
+		int generation = 0;
+		while(true){
+			generation++;
+			System.out.println("==== Current Generation: " + generation + " ====");
+			neat.nextGeneration();
+			this.save(neat.getMaxNetwork());
+		}
+		
+	}
+	
+	private static DefaultNEAT.SimulateDelegate delegate = (NeuralNetwork network) -> {
+		double score = 0;
+		
+		for(int i = 0; i < 20; i++){
+			int i1 = (int)(Math.random() * 2);
+			int i2 = (int)(Math.random() * 2);
+			int value = i1 ^ i2;
+			network.updateInputs(new double[]{i1, i2});
+			network.updateLayers();
+			score += 1 - Math.abs(network.outputs[0].value - value);
+		}
+								
+		network.score = (int)(score * 100);
+	};
+
+}

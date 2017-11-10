@@ -1,0 +1,20 @@
+package ca.nicho.neat;
+
+import ca.nicho.neuralnet.NeuralNetwork;
+
+public class SpeciationNEAT extends DefaultNEAT {
+
+	public SpeciationNEAT(NeuralNetwork origin, SimulateDelegate simulateDelegate){
+		super(origin, simulateDelegate);
+	}
+	
+	public double getVariation(NeuralNetwork n1, NeuralNetwork n2){
+		
+		double N = Math.max(n1.axons.size(), n2.axons.size());
+		
+		for(Axon a1 : n1.axons)
+		
+		return 0;
+	}
+	
+}

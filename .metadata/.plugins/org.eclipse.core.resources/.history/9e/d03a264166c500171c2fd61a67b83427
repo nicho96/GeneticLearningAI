@@ -1,0 +1,12 @@
+package ca.nicho.neat;
+
+import ca.nicho.neat.DefaultNEAT.SimulateDelegate;
+import ca.nicho.neuralnet.NeuralNetwork;
+
+public class SpeciationNEAT extends DefaultNEAT {
+
+	public SpeciationNEAT(NeuralNetwork origin, SimulateDelegate simulateDelegate){
+		super(origin, simulateDelegate)
+	}
+	
+}

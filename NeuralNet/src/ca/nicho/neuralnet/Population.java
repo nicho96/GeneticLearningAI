@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
-import ca.nicho.neuralnet.DefaultNEAT.SimulateDelegate;
+import ca.nicho.neat.DefaultNEAT.SimulateDelegate;
 
 public class Population {
 

@@ -1,0 +1,12 @@
+package ca.nicho.neat;
+
+public class Innovation {
+
+	public long innovation;
+	public byte 
+	
+	public Innovation(long innovationCount){
+		this.innovation = innovationCount;
+	}
+	
+}
