@@ -1,0 +1,124 @@
+package ca.nicho.neat;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Set;
+
+import ca.nicho.neuralnet2.NeuralNetwork2;
+import ca.nicho.neuralnet2.neat2.DefaultNEAT2;
+
+public class SpeciationNEAT2 extends DefaultNEAT2 {
+
+public static double[] W = {0.5, 0.5, 1};
+	
+	public double variationThreshold = 0.51;
+	public int lastNumberSpecies = 0;
+	
+	public SpeciationNEAT2(int inputSize, int outputSize, SimulateDelegate simulateDelegate){
+		super(inputSize, outputSize, simulateDelegate);
+	}
+	
+	@Override
+	protected void selection(){
+		
+		Collections.sort(networks);
+		Collections.reverse(networks);
+		
+		//Sepciation portion
+		LinkedHashMap<NeuralNetwork2, ArrayList<NeuralNetwork2>> species = new LinkedHashMap<NeuralNetwork2, ArrayList<NeuralNetwork2>>();
+		for(NeuralNetwork2 nn : networks){
+			boolean added = false;
+			for(NeuralNetwork2 net : species.keySet()){
+				if(getVariation(nn, net) < variationThreshold){
+					added = true;
+					species.get(net).add(nn);
+					break;
+				}
+			}
+			//If no species are similar to the network, create a new one
+			if(!added){
+				ArrayList<NeuralNetwork2> arr = new ArrayList<NeuralNetwork2>();
+				arr.add(nn);
+				species.put(nn, arr);
+			}
+		}
+		
+		if(Math.abs(lastNumberSpecies - species.size()) < 2){
+			variationThreshold -= 0.01;
+		}else{
+			variationThreshold += 0.01;
+		}
+		
+		lastNumberSpecies = species.size();
+		
+		verbose("Number of species: " + species.size());
+		
+		ArrayList<NeuralNetwork2> selected = new ArrayList<NeuralNetwork2>(this.speciesCapacity);
+		
+		int index = 0;
+		boolean running = true;
+		while(running){
+			for(ArrayList<NeuralNetwork2> list : species.values()){
+				if(index < list.size()){
+					selected.add(list.get(index));
+				}
+				if(selected.size() == networks.size() || selected.size() == speciesCapacity){
+					running = false;
+					break;
+				}
+			}
+			index++;
+		}
+		
+		this.networks = selected;
+		
+		verbose("Number of networks: " + this.networks.size());
+		
+		Collections.sort(networks);
+		Collections.reverse(networks);
+		
+	}
+	
+	public double getVariation(NeuralNetwork2 n1, NeuralNetwork2 n2){
+						
+		double same = 0;
+		double d_weight = 0;
+				
+		long n1_max = n1.maxInnovation;
+		long n2_max = n2.maxInnovation;
+				
+		Set<Long> numbers = new HashSet<Long>(n1.connections.keySet());
+		numbers.addAll(n2.connections.keySet());
+				
+		ArrayList<Long> disjoint = new ArrayList<Long>();
+		ArrayList<Long> excess = new ArrayList<Long>();
+				
+		//Sort out the intersect, excess and disjoint genes
+		for(long innovation: numbers){
+			if(n1.connections.containsKey(innovation) && n2.connections.containsKey(innovation)){
+				same += 1;
+				d_weight += Math.abs(n1.connections.get(innovation).weight - n2.connections.get(innovation).weight);
+			}else if(n1.connections.containsKey(innovation)){
+				if(innovation > n2_max){
+					excess.add(innovation);
+				}else{
+					disjoint.add(innovation);
+				}
+			}else if(n2.connections.containsKey(innovation)){
+				if(innovation > n1_max){
+					excess.add(innovation);
+				}else{
+					disjoint.add(innovation);
+				}
+			}
+		}
+						
+		//Take linear combination
+		double comb = W[0] * disjoint.size() / (double)numbers.size() + W[1] * excess.size() / (double)numbers.size() + W[2] * ((same == 0) ? 0 : d_weight / same);
+		System.out.println(comb);
+		return comb;
+	}
+	
+}

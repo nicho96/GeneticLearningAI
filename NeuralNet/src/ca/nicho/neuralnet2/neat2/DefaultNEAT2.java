@@ -1,0 +1,373 @@
+package ca.nicho.neuralnet2.neat2;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import ca.nicho.neat.DefaultNEAT;
+import ca.nicho.neuralnet2.Connection;
+import ca.nicho.neuralnet2.InnovationHandler;
+import ca.nicho.neuralnet2.NeuralNetwork2;
+import ca.nicho.neuralnet2.Neuron;
+import ca.nicho.neuralnet2.NeuronHidden;
+
+/**
+ * A default implementation of NEAT. Not a very good one, but used as an example.
+ * Realistically, each NEAT implementation will be tailored for each application.
+ * @author nicho
+ *
+ */
+public class DefaultNEAT2 extends NEAT2 {
+
+	public static double[] W = {1, 1, 1};
+	public static final double DEVIATION_THRESHOLD = 0.3;
+	public static boolean VERBOSE = true;
+	
+	protected int speciesCapacity;
+	protected Random random = new Random();
+	protected SimulateDelegate simulateDelegate;
+	
+	private static ExecutorService exec = Executors.newFixedThreadPool(4);
+	
+	public DefaultNEAT2(int inputSize, int outputSize, SimulateDelegate simulateDelegate, int speciesCapacity){
+		this.speciesCapacity = speciesCapacity;
+		NeuralNetwork2 origin = new NeuralNetwork2(new InnovationHandler(), inputSize, outputSize);
+		this.mutate(origin); //Give it an initial mutation, increases variation early on
+		
+		networks.add(origin);
+		for(int i = 0; i < speciesCapacity - 1; i++){
+			networks.add(new NeuralNetwork2(origin));
+		}
+		
+		//Start with mutated networks
+		for(NeuralNetwork2 nn : networks){
+			this.mutate(nn);
+		}
+		
+		this.simulateDelegate = simulateDelegate;
+	}
+	
+	
+	@Override
+	protected void crossoverGeneration() {
+		int bredCount = 0;
+		while(bredCount < speciesCapacity / 4){
+			NeuralNetwork2 nn1 = networks.get(random.nextInt(networks.size()));
+			NeuralNetwork2 nn2 = null;
+			while(nn2 == null || nn2 == nn1){
+				nn2 = networks.get(random.nextInt(networks.size()));
+			}
+			if(getVariation(nn1, nn2) > DEVIATION_THRESHOLD){
+				NeuralNetwork2 child = this.crossover(nn1, nn2);
+				this.mutate(child);
+				this.networks.add(child);
+			}
+			bredCount++;
+		}
+		this.verbose(bredCount + " children created.");
+	}
+
+	@Override
+	protected void simulateGeneration() {
+		ArrayList<Future<?>> futures = new ArrayList<Future<?>>();
+		for(NeuralNetwork2 nn : networks){
+			Runnable r = () -> simulateDelegate.simulateNetwork(nn);
+			futures.add(exec.submit(r));
+		}
+		
+		try {
+			for(Future<?> f : futures){
+				f.get();
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		}
+		this.verbose("Simulated generation.");
+	}
+
+	@Override
+	protected void mutate(NeuralNetwork2 nn) {
+		
+		for(int j = 0; j < nn.connections.size() * 0.02 + 1; j++){
+			while(!this.selectMutation(nn));
+		}
+				
+	}
+
+	protected NeuralNetwork2 crossover(NeuralNetwork2 n1, NeuralNetwork2 n2){
+		
+		if(n1.score > n2.score){
+			NeuralNetwork2 tmp = n2;
+			n2 = n1;
+			n1 = tmp;
+		}
+		
+		NeuralNetwork2 child = new NeuralNetwork2(new InnovationHandler(), n1.inputsArr.size(), n1.outputsArr.size());
+		child.ih = n1.ih;
+		
+		long n1_max = n1.maxInnovation;
+		long n2_max = n2.maxInnovation;
+		
+		child.maxInnovation = Math.max(n1_max, n2_max);
+		
+		Set<Long> numbers = new HashSet<Long>(n2.connections.keySet());
+		numbers.addAll(n1.connections.keySet());
+				
+		ArrayList<Long> intersect = new ArrayList<Long>();
+		ArrayList<Long> seperate = new ArrayList<Long>();
+		ArrayList<Long> disjoint = new ArrayList<Long>();
+		ArrayList<Long> excess = new ArrayList<Long>();
+		
+		//Sort out the intersect, excess and disjoint genes
+		for(long innovation: numbers){
+			if(n1.connections.containsKey(innovation) && n2.connections.containsKey(innovation)){
+				intersect.add(innovation);
+			}else if(n1.connections.containsKey(innovation)){
+				if(innovation > n2_max){
+					excess.add(innovation);
+				}else{
+					disjoint.add(innovation);
+				}
+				seperate.add(innovation);
+			}else{
+				if(innovation > n1_max){
+					excess.add(innovation);
+				}else{
+					disjoint.add(innovation);
+				}
+				seperate.add(innovation);
+			}
+		}
+		
+		//Keep a cache of all neurons
+		LinkedHashMap<Long, Neuron> cache = child.getAllNeuronsMap();
+		
+		//Create the parent structure out of the intersect genes (ancestor structure)
+		for(long innovation : intersect){
+			Connection c1 = n1.connections.get(innovation);
+			Connection c2 = n2.connections.get(innovation);
+			
+			long n_from = c1.from.innovation;
+			long n_to = c1.to.innovation;
+			double weight = (random.nextDouble() < 0.25) ? c2.weight : c1.weight;
+			boolean enabled = (random.nextDouble() < 0.25) ? c2.enabled : c1.enabled;
+			
+			Neuron from = cache.get(n_from);
+			NeuronHidden to = (NeuronHidden)cache.get(n_to);
+			
+			if(from == null){
+				from = child.createHiddenNeuron(n_from);
+				cache.put(from.innovation, from);
+				
+			}
+			
+			if(to == null){
+				to = child.createHiddenNeuron(n_to);
+				cache.put(to.innovation, to);
+			}
+			
+			if(!from.hasInput(to)){
+				child.makeConnection(from, to, weight).enabled = enabled;
+			}
+			
+		}
+				
+		for(long innovation : seperate){
+			Connection c = n1.connections.get(innovation);
+			if(c == null)
+				c = n2.connections.get(innovation);
+			
+			long n_from = c.from.innovation;
+			long n_to = c.to.innovation;
+			
+			Neuron from = cache.get(n_from);
+			NeuronHidden to = (NeuronHidden)cache.get(n_to);
+			
+			if(from == null){
+				from = child.createHiddenNeuron(n_from);
+				cache.put(from.innovation, from);
+				
+			}
+			
+			if(to == null){
+				to = child.createHiddenNeuron(n_to);
+				cache.put(to.innovation, to);
+			}
+			
+			if(!from.hasInput(to)){
+				child.makeConnection(from, to, c.weight).enabled = c.enabled;
+			}
+			
+		}
+				
+		
+		return child;
+	}
+	
+	@Override
+	protected void selection() {
+		Collections.sort(networks);
+		Collections.reverse(networks);
+		//Removes the weakest species after the capacity
+		if(networks.size() > this.speciesCapacity){
+			List<NeuralNetwork2> sub = networks.subList(speciesCapacity, networks.size());
+			this.verbose("Cleared " + sub.size() + " networks. Max: " + sub.get(0).score);
+			sub.clear();
+		}
+	}
+	
+	/**
+	 * Randomly chooses a mutation.
+	 * @param nn The neural network being mutated.
+	 * @return true if a mutation occures, false if not.
+	 */
+	private boolean selectMutation(NeuralNetwork2 nn){
+		double r = random.nextDouble();
+		
+		if(r < 0.25){
+			return this.randomNeuronConnection(nn);
+		}else if(r < 0.50){
+			return this.randomAxonWeightChange(nn);
+		}else if(r < 0.75){
+			return this.splitRandomConnection(nn);
+		}else{
+			return this.randomAxonToggle(nn);
+		}
+	}
+	
+	private boolean splitRandomConnection(NeuralNetwork2 nn){
+		
+		//Only axons that are separated by two or more layers should be considered.
+		if(nn.connectionsArr.size() == 0){
+			return false;
+		}
+		
+		Connection con = nn.connectionsArr.get(random.nextInt(nn.connectionsArr.size()));
+		nn.splitConnection(con);
+				
+		return true;
+		
+	}
+	
+	private boolean randomAxonToggle(NeuralNetwork2 nn){
+		if(nn.connectionsArr.size() == 0)
+			return false;
+		Connection con = nn.connectionsArr.get(random.nextInt(nn.connectionsArr.size()));
+		con.enabled = !con.enabled;
+		return true;
+	}
+
+	private boolean randomNeuronConnection(NeuralNetwork2 nn){	
+		
+		ArrayList<Neuron> inputs = new ArrayList<Neuron>();
+		inputs.addAll(nn.inputsArr);
+		inputs.addAll(nn.hiddenArr);
+		ArrayList<NeuronHidden> outputs = nn.getNonInputNeuronsArray();
+		
+		Neuron from = inputs.get(random.nextInt(inputs.size()));
+		NeuronHidden to = outputs.get(random.nextInt(outputs.size()));
+
+		//Check if both neurons are the same
+		if(from == to)
+			return false;
+		
+		//Check if this connection already exists
+		for(Connection con : to.inputs){
+			if(con.from == from)
+				return false;
+		}
+		
+		//Recursively checks if this connection will cause a loop
+		if(from.hasInput(to)){
+			return false;
+		}
+		
+		nn.makeConnection(from, to, random.nextDouble() * 2 - 1);
+		
+		return true;
+	}
+	
+	private boolean randomAxonWeightChange(NeuralNetwork2 nn){
+		if(nn.connectionsArr.size() == 0) //No axons to change
+			return false;
+		Connection con = nn.connectionsArr.get(random.nextInt(nn.connectionsArr.size()));
+		con.weight = random.nextDouble() * 2 - 1;
+		return true;
+	}
+	
+	public double getVariation(NeuralNetwork2 n1, NeuralNetwork2 n2){
+		
+		double same = 0;
+		double d_weight = 0;
+				
+		long n1_max = n1.maxInnovation;
+		long n2_max = n2.maxInnovation;
+				
+		Set<Long> numbers = new HashSet<Long>(n1.connections.keySet());
+		numbers.addAll(n2.connections.keySet());
+				
+		ArrayList<Long> disjoint = new ArrayList<Long>();
+		ArrayList<Long> excess = new ArrayList<Long>();
+				
+		//Sort out the intersect, excess and disjoint genes
+		for(long innovation: numbers){
+			if(n1.connections.containsKey(innovation) && n2.connections.containsKey(innovation)){
+				same += 1;
+				d_weight += Math.abs(n1.connections.get(innovation).weight - n2.connections.get(innovation).weight);
+			}else if(n1.connections.containsKey(innovation)){
+				if(innovation > n2_max){
+					excess.add(innovation);
+				}else{
+					disjoint.add(innovation);
+				}
+			}else if(n2.connections.containsKey(innovation)){
+				if(innovation > n1_max){
+					excess.add(innovation);
+				}else{
+					disjoint.add(innovation);
+				}
+			}
+		}
+						
+		//Take linear combination
+		double comb = W[0] * disjoint.size() / (double)numbers.size() + W[1] * excess.size() / (double)numbers.size() + W[2] * ((same == 0) ? 0 : d_weight / same);
+		return comb;
+	}
+	
+	@Override
+	public void onGenerationEnd(){
+
+	}
+	
+	protected void verbose(String message){
+		if(DefaultNEAT.VERBOSE)
+			System.out.println("\t" + message);
+	}
+	
+	/**
+	 * Gets the best network after a generation. Only call at the end of a
+	 * simulateGeneration() call.
+	 * @return the max network.
+	 */
+	public NeuralNetwork2 getMaxNetwork(){
+		return this.networks.get(0);
+	}
+	
+	@FunctionalInterface
+	public interface SimulateDelegate {
+
+		void simulateNetwork(NeuralNetwork2 network);
+		
+	}
+	
+}

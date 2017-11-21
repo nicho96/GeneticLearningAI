@@ -1,0 +1,118 @@
+package ca.nicho.gui;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import ca.nicho.neuralnet2.NeuralNetwork2;
+import ca.nicho.neuralnet2.Screen2;
+import ca.nicho.neuralnet2.neat2.DefaultNEAT2;
+
+public class ManualNEAT extends DefaultNEAT2 {
+	
+	public NeuralNetwork2 n1;
+	public NeuralNetwork2 n2;
+	
+	private JFrame frame;
+	private Screen2 screen;
+	private JPanel controls;
+	
+	private JTextField networkF = new JTextField();
+	private JButton networkB = new JButton("Set Network");
+	private JLabel networkL = new JLabel();
+	
+	private JTextField parent1F = new JTextField();
+	private JTextField parent2F = new JTextField();
+	private JButton crossoverB = new JButton("Breed Network");
+	
+	public ManualNEAT(int inputSize, int outputSize, SimulateDelegate simulateDelegate) {
+		super(inputSize, outputSize, simulateDelegate, 2);
+		initFrame();
+		initScreen();
+		initControls();
+		
+		updateNetworks(0);
+		
+		frame.setPreferredSize(new Dimension(screen.getWidth() + controls.getWidth(), screen.getHeight()));
+		frame.pack();
+	}
+
+	private void initFrame(){
+		frame = new JFrame();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //TODO may want to save the state of the AI
+		frame.getContentPane().setLayout(null);
+		frame.setFocusable(false);
+		frame.setVisible(true);	
+	}
+	
+	private void initScreen(){
+		screen = new Screen2();
+		screen.setNeuralNetwork(networks.get(0));
+		frame.add(screen);
+	}
+	
+	private void initControls(){
+		controls = new JPanel();
+		controls.setBounds(screen.getWidth(), 0, 400, screen.getHeight());
+		controls.setVisible(true);
+		controls.setLayout(null);
+		
+		networkF.setBounds(10, 10, 50, 30);
+		controls.add(networkF);
+		networkB.addActionListener(changeNetwork);
+		networkB.setBounds(70, 10, 100, 30);
+		controls.add(networkB);
+		networkL.setBounds(180, 10, 110, 30);
+		controls.add(networkL);
+		
+		parent1F.setBounds(10, 50, 50, 30);
+		controls.add(parent1F);
+		
+		parent2F.setBounds(10, 50, 50, 30);
+		
+		frame.add(controls);
+	}
+	
+	private void manualCrossover(NeuralNetwork2 n1, NeuralNetwork2 n2){
+		NeuralNetwork2 n = this.crossover(n1, n2);
+		networks.add(n);
+		updateNetworks(networks.size() - 1);
+	}
+	
+	private void updateNetworks(int index) {
+		screen.setNeuralNetwork(networks.get(index));
+		networkL.setText(index + " / " + networks.size());
+	}
+	
+	private ActionListener changeNetwork = (ActionEvent ev) -> {	
+		try {
+			int index = Integer.parseInt(networkF.getText());
+			updateNetworks(index);
+			networkF.setBackground(Color.white);
+		}catch(Exception e){
+			networkF.setBackground(Color.pink);
+		}
+	};
+	
+	private ActionListener crossoverNetworks = (ActionEvent ev) -> {	
+		try {
+			int i1 = Integer.parseInt(parent1F.getText());
+			int i2 = Integer.parseInt(parent1F.getText());
+			manualCrossover(networks.get(i1), networks.get(i2));
+		}catch(Exception e){
+			parent1F.setBackground(Color.pink);
+			parent2F.setBackground(Color.pink);
+		}
+	};
+	
+	
+	
+	
+}

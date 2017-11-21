@@ -1,7 +1,0 @@
-package ca.nicho.neuralnet;
-
-public abstract class NEAT {
-
-	
-	
-}

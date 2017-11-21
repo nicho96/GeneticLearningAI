@@ -1,2 +1,27 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<qualifiedTypeNameHistroy/>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="java.util.Collections"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet.DefaultNEAT"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet.DefaultNEAT.SimulateDelegate"/>
+<fullyQualifiedTypeName name="java.util.List"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet2.InnovationHandler"/>
+<fullyQualifiedTypeName name="java.io.File"/>
+<fullyQualifiedTypeName name="java.io.DataOutputStream"/>
+<fullyQualifiedTypeName name="java.io.DataInputStream"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet2.NeuronHidden"/>
+<fullyQualifiedTypeName name="java.nio.ByteBuffer"/>
+<fullyQualifiedTypeName name="java.util.Arrays"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet2.Connection"/>
+<fullyQualifiedTypeName name="java.util.Map"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet.NeuralNetwork"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet2.NeuronIn"/>
+<fullyQualifiedTypeName name="java.util.Map.Entry"/>
+<fullyQualifiedTypeName name="ca.nicho.tetris.Screen"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet2.NeuralNetwork2"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet2.Neuron"/>
+<fullyQualifiedTypeName name="javax.imageio.ImageIO"/>
+<fullyQualifiedTypeName name="ca.nicho.neuralnet.Screen"/>
+<fullyQualifiedTypeName name="java.util.concurrent.Executors"/>
+<fullyQualifiedTypeName name="ca.nicho.neat.DefaultNEAT.SimulateDelegate"/>
+<fullyQualifiedTypeName name="java.awt.Color"/>
+</qualifiedTypeNameHistroy>

@@ -1,0 +1,27 @@
+package ca.nicho.xor;
+
+import ca.nicho.neat.SpeciationNEAT2;
+import ca.nicho.neuralnet2.InnovationHandler;
+import ca.nicho.neuralnet2.NeuralNetwork2;
+import ca.nicho.neuralnet2.neat2.DefaultNEAT2;
+
+public class XORAI {
+	
+	public static void main(String[] s) throws Exception{
+				
+		SpeciationNEAT2 neat = new SpeciationNEAT2(2, 2, delegate);
+		
+		for(NeuralNetwork2 n: neat.networks){
+			System.out.println(n);
+			System.out.println("==========");
+		}
+		
+	}
+	
+	private static DefaultNEAT2.SimulateDelegate delegate = (NeuralNetwork2 network) -> {
+		
+		
+		
+	};
+
+}

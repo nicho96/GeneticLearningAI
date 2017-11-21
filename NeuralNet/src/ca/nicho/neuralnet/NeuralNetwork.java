@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+@Deprecated //In favor of a simpler implementation (NeuralNetwork2)
 public class NeuralNetwork implements Comparable<NeuralNetwork> {
 
 	public static final float ACTIVATION_THRESHOLD = 0.5F;

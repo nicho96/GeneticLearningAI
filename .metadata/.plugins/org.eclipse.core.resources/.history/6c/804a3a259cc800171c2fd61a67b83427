@@ -1,0 +1,41 @@
+package ca.nicho.xor;
+
+import java.io.File;
+
+import ca.nicho.neat.DefaultNEAT;
+import ca.nicho.neuralnet.NeuralNetwork;
+import ca.nicho.neuralnet2.InnovationHandler;
+import ca.nicho.neuralnet2.NeuralNetwork2;
+
+public class XORAI {
+	
+	public static void main(String[] s) throws Exception{
+		
+		NeuralNetwork2 n1 = new NeuralNetwork();
+		
+	}
+	
+	private static DefaultNEAT.SimulateDelegate delegate = (NeuralNetwork network) -> {
+		double score = 0;
+			
+		for(int i1 = 0; i1 < 2; i1++){
+			for(int i2 = 0; i2 < 2; i2++){
+				int value = i1 ^ i2;
+				network.updateInputs(new double[]{i1, i2});
+				network.updateLayers();
+				
+				//Correct output, we want this to be as close to 1 as possible
+				double o1 = network.outputs[value].value;
+				
+				//Incorrect output, we want this to be as close to 0 as possible
+				double o2 = network.outputs[(value + 1) % 2].value;
+				
+				score += o1 - 2 * o2;
+				
+			}
+		}
+								
+		network.score = (int)(score * 100);
+	};
+
+}

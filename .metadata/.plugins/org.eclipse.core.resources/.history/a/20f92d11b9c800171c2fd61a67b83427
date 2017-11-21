@@ -1,0 +1,118 @@
+package ca.nicho.nerual;
+
+import java.awt.event.KeyEvent;
+import java.util.Arrays;
+
+import ca.nicho.Board;
+import ca.nicho.neuralnet.Neuron;
+import ca.nicho.neuralnet2.NeuralNetwork2;
+
+public abstract class NetworkController {
+
+	protected NeuralNetwork2 network;
+	protected Board board;
+	public int moveCount = 0;
+	public int failedMoves = 0;
+	
+	public int lastKeyCode;
+	
+	public NetworkController(NeuralNetwork2 network, Board board){
+		this.network = network;
+		this.board = board;
+	}
+	
+	public Board simulate(){
+		//Spawn both random tiles
+		board.spawnRandomTile();
+		board.spawnRandomTile();
+		boolean running = true;
+		while(running){
+					
+			if(!makeMove()){
+				running = false;
+				break;
+			}			
+			board.resetMergeState();
+			board.spawnRandomTile();
+						
+		}
+		
+		network.score = board.score;
+		
+		return board;
+	}
+	
+	public abstract void readInputs();
+	
+	public boolean makeMove(){
+		
+		moveCount++;
+		
+		resetInputs();
+		readInputs();
+		network.updateLayers();
+		
+		NeuronMove[] moves = new NeuronMove[network.outputsArr.size()];
+		for(int i = 0; i < network.outputsArr.size(); i++){
+			moves[i] = new NeuronMove(network.get.value, i);
+		}
+		
+		Arrays.sort(moves);
+		
+		for(int i = 0; i < moves.length; i++){
+			if(makeMove(moves[i])){
+				return true;
+			}
+			failedMoves++;
+		}
+		
+		return false;
+	}
+	
+	public boolean makeMove(NeuronMove move){
+		switch(move.index){
+		case 0:
+			lastKeyCode = KeyEvent.VK_UP;
+			return board.makeMove(0, -1);
+		case 1:
+			lastKeyCode = KeyEvent.VK_DOWN;
+			return board.makeMove(0, 1);
+		case 2:
+			lastKeyCode = KeyEvent.VK_LEFT;
+			return board.makeMove(-1, 0);
+		case 3:
+			lastKeyCode = KeyEvent.VK_RIGHT;
+			return board.makeMove(1, 0);
+		}
+		return false;
+	}
+	
+	public void resetInputs(){
+		for(Neuron n : network.inputs){
+			n.value = 0;
+		}
+	}
+	
+	protected class NeuronMove implements Comparable<NeuronMove> {
+
+		protected double score;
+		protected int index;
+		
+		public NeuronMove(double score, int index){
+			this.score = score;
+			this.index = index;
+		}
+		
+		@Override
+		public int compareTo(NeuronMove o) {
+			if(score < o.score){
+				return -1;
+			}else if(score > o.score){
+				return 1;
+			}
+			return 0;
+		}
+		
+	}
+	
+}

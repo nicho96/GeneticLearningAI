@@ -1,0 +1,62 @@
+package ca.nicho.tetris;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import ca.nicho.neuralnet.NeuralNetwork;
+import ca.nicho.neuralnet.Species;
+import ca.nicho.neuralnet2.NeuralNetwork2;
+import ca.nicho.neuralnet2.neat2.DefaultNEAT2;
+import ca.nicho.neuralnet2.neat2.SpeciationNEAT2;
+import ca.nicho.tetris.controller.PerspectiveNeuralNetworkController;
+
+public class Evolver {
+
+	public static final long BOARD_SEED = 0;
+	
+	public static final File DIR_PATH = new File("networks");
+	
+	public ArrayList<Species> genomes = new ArrayList<Species>();
+	
+	public boolean isPaused = false;
+	
+	public Evolver(){
+						
+		DefaultNEAT2 neat = new DefaultNEAT2(PerspectiveNeuralNetworkController.INPUT_SIZE, 3, delegate);
+
+		int generation = 0;
+		while(true){
+			generation++;
+			System.out.println("==== Current Generation: " + generation + " Max: " + neat.getMaxNetwork().score + " ====");
+			neat.nextGeneration();
+			try {
+				neat.getMaxNetwork().save(new File(DIR_PATH, "test2.dat"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	private DefaultNEAT2.SimulateDelegate delegate = (NeuralNetwork2 network) -> {
+		Board b = new Board(Evolver.BOARD_SEED);
+		b.setController(new PerspectiveNeuralNetworkController(b, network));
+		b.simulate();
+	};
+	
+	private void save(NeuralNetwork nn){
+		File f = new File(DIR_PATH, "test3.dat");
+		if(!f.exists()){
+			f.getParentFile().mkdirs();
+			try {
+				f.createNewFile();
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+				return;
+			}
+		}
+		nn.save(f);
+	}
+	
+}

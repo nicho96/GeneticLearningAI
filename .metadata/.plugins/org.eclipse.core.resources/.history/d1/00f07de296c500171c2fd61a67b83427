@@ -1,9 +1,0 @@
-package ca.nicho.neat;
-
-public class Innovation {
-
-	public Innovation(){
-		
-	}
-	
-}
