@@ -1,0 +1,11 @@
+package ca.nicho.smb3net;
+
+public class SMBEvolver {
+
+	public SMBEvolver(){
+		
+		SpeciationNEAT2 neat = new SpeciationNEAT2();
+		
+	}
+	
+}

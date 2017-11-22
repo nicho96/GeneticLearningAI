@@ -1,0 +1,34 @@
+package ca.nicho.smb3net;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+
+import ca.nicho.neuralnet2.neat2.SpeciationNEAT2;
+
+public class SMBEvolver {
+
+	private final DataInputStream stream;
+	private final DataOutputStream out;
+	
+	public SMBEvolver(DataInputStream stream, DataOutputStream out){
+		
+		this.stream = stream;
+		this.out = out;
+		
+		SpeciationNEAT2 neat = new SpeciationNEAT2();
+		
+	}
+	
+	private int getInputSize() throws IOException{
+		String inputStr = "";
+		while(true){
+			char c = (char)stream.read();
+			if(c == '\n')
+				break;
+			
+			inputStr += c;
+		}
+		return Integer.parseInt(inputStr);
+	}
+	
+}

@@ -1,0 +1,86 @@
+package ca.nicho.smb3net;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class Start {
+	
+	public static void main(String[] s) throws IOException{
+
+		ServerSocket server = new ServerSocket(1024);
+		Socket socket = server.accept();
+		
+		System.out.println("Emulator Connected");
+		
+		DataInputStream stream = new DataInputStream(socket.getInputStream());
+		DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+		String inputStr = "";
+		while(true){
+			char c = (char)stream.read();
+			if(c == '\n')
+				break;
+			
+			inputStr += c;
+		}
+		
+		String outputStr = "";
+		while(true){
+			char c = (char)stream.read();
+			if(c == '\n')
+				break;
+			
+			outputStr += c;
+		}
+		
+		
+		int inputSize = Integer.parseInt(inputStr);
+		int outputSize = Integer.parseInt(outputStr);
+		
+		System.out.println("Input Size: " + inputSize);
+		
+		while(true){
+						
+			char c = (char)stream.read();
+			
+			//INPUT DATA PAYLOAD
+			if(c == 'I'){
+				byte[] data = new byte[inputSize];
+				for(int i = 0; i < inputSize; i++){
+					char d = (char)stream.read();
+					data[i] = (byte)((d == 'b') ? 1 : (d == 'e') ? -1 : 0);
+				}		
+				
+				for(int i = 0; i < outputSize; i++){
+					out.write((char)'1');
+				}
+				out.write((byte)'\n');
+				
+				continue;
+			}
+			
+			//FITNESS PAYLOAD (also means we need to move to the next generation)
+			if(c == 'F'){
+				String fitnessStr = "";
+				while(true){
+					char d = (char)stream.read();
+					if(d == '\n')
+						break;
+					
+					fitnessStr += d;
+				}
+				int fitness = Integer.parseInt(fitnessStr);
+				System.out.print("Fitness: " + fitness);
+				continue;
+			}
+			
+		}
+		
+		//server.close();
+	
+	}
+
+}

@@ -21,7 +21,7 @@ public abstract class NEAT2 {
 		this.simulateGeneration();
 		this.selection();		
 		this.onGenerationEnd();
-		this.crossoverGeneration();
+		//this.crossoverGeneration();
 		
 	}
 	

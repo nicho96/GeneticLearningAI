@@ -1,0 +1,14 @@
+package ca.nicho.smb3net;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+
+public class Start {
+	
+	public static void main(String[] s) throws IOException{
+
+		ServerSocket server = new ServerSocket(1024);
+	
+	}
+
+}

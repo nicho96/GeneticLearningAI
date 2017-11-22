@@ -110,7 +110,9 @@ public class Screen2 extends JPanel {
 						
 		//Draw neurons
 		for(Map.Entry<Neuron, Point> entry : nodes.entrySet()){
-			if(entry.getKey().cachedActivation < NeuralNetwork2.ACTIVATION_THRESHOLD){
+			if(entry.getKey().cachedActivation < 0){
+				g.setColor(Color.BLUE);
+			}else if(entry.getKey().cachedActivation <= NeuralNetwork2.ACTIVATION_THRESHOLD){
 				g.setColor(Color.RED);
 			}else{
 				g.setColor(Color.GREEN);

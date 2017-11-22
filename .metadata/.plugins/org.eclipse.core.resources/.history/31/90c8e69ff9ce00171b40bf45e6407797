@@ -1,0 +1,19 @@
+package ca.nicho.smb3net;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+
+import ca.nicho.neuralnet2.neat2.SpeciationNEAT2;
+
+public class SMBEvolver {
+
+	private final DataInputStream in;
+	private final DataOutputStream out;
+	
+	public SMBEvolver(DataInputStream stream, DataOutputStream out){
+		
+		SpeciationNEAT2 neat = new SpeciationNEAT2();
+		
+	}
+	
+}

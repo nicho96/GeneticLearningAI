@@ -35,7 +35,7 @@ public class DefaultNEAT2 extends NEAT2 {
 	protected Random random = new Random();
 	protected SimulateDelegate simulateDelegate;
 	
-	private static ExecutorService exec = Executors.newFixedThreadPool(4);
+	private static ExecutorService exec = Executors.newFixedThreadPool(1);
 	
 	public DefaultNEAT2(int inputSize, int outputSize, SimulateDelegate simulateDelegate, int speciesCapacity){
 		this.speciesCapacity = speciesCapacity;
@@ -98,7 +98,7 @@ public class DefaultNEAT2 extends NEAT2 {
 	@Override
 	protected void mutate(NeuralNetwork2 nn) {
 		
-		for(int j = 0; j < nn.connections.size() * 0.02 + 1; j++){
+		for(int j = 0; j < nn.connections.size() * 0.1 + 1; j++){
 			while(!this.selectMutation(nn));
 		}
 				
