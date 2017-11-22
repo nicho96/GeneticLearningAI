@@ -28,7 +28,8 @@ public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 	public InnovationHandler ih;
 	public long maxInnovation = 0;
 	
-	public double score;
+	private double score;
+	public boolean simulated = false;
 	
 	/**
 	 * Creates a new network
@@ -263,6 +264,15 @@ public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 		}
 				
 		return buffer.array();
+	}
+	
+	public void setScore(double score){
+		this.simulated = true;
+		this.score = score;
+	}
+	
+	public double getScore(){
+		return score;
 	}
 	
 	

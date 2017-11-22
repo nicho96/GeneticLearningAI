@@ -5,6 +5,8 @@ public abstract class Neuron extends Gene {
 	protected int activationID;
 	public double cachedActivation;
 	
+	public int depth;
+	
 	public Neuron(long innovation){
 		this.innovation = innovation;
 	}

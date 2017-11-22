@@ -8,7 +8,7 @@ public class XORAI {
 	
 	public static void main(String[] s) throws Exception{
 				
-		ManualNEAT neat = new ManualNEAT(2, 2, delegate);
+		ManualNEAT neat = new ManualNEAT(169, 2, delegate);
 		
 	}
 	

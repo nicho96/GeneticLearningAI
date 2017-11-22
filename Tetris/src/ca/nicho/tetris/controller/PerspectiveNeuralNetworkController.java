@@ -67,7 +67,7 @@ public class PerspectiveNeuralNetworkController extends Controller {
 		if(board.isFinished)
 			return;
 		
-		network.score = board.score; //Update the network's score
+		network.setScore(board.score);  //Update the network's score
 		
 		double[] inputs = boardToInputs();
 		network.setInputs(inputs);
@@ -86,13 +86,13 @@ public class PerspectiveNeuralNetworkController extends Controller {
 				rotatePressed = true;
 			}
 		}else{
-			System.out.println("This network's score: " + network.score);
+			System.out.println("This network's score: " + network.getScore());
 		}
 		
 	}
 	
 	public void finished(){
-		network.score = board.score;
+		network.setScore(board.score);
 	}
 	
 }

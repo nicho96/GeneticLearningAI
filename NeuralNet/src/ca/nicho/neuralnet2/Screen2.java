@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,79 +15,81 @@ public class Screen2 extends JPanel {
 
 	private NeuralNetwork2 network;
 	
-	public HashMap<Integer, Integer> depths;
+	public HashMap<Integer, ArrayList<Neuron>> depths;
 	public HashMap<Neuron, Point> nodes;
+	
+	public static final int INPUT_WIDTH = 200;
 
-	public Screen2(){
-
-		this.setSize(600, 500);
+	public Screen2(int width, int height){
+		this.setSize(width, height);
 		this.setBackground(new Color(0xA4A4A4));
-		
+	}
+	
+	public void startAutoDraw(){
 		new Thread(drawThread).start();
 	}
 	
-	public int dx = 50;
-	public int dy = 20;
-	public int diameter = 10;
+	public int diameter = 8;
 	
 	public void setNeuralNetwork(NeuralNetwork2 network){
 		
 		this.nodes = new HashMap<Neuron, Point>();
-		this.depths = new HashMap<Integer, Integer>();
+		this.depths = new HashMap<Integer, ArrayList<Neuron>>();
 		this.network = network;
 		
 		//Start from outputs
 		for(NeuronHidden n : network.outputsArr){
-			rec(n, 0);
+			getDepth(n, 0);
 		}
 		
-		boolean unchanged = false;
-		while(!unchanged){
-			unchanged = true;
-			for(Connection c : network.connectionsArr){
-				Point p1 = nodes.get(c.from);
-				Point p2 = nodes.get(c.to);
-				if(p1 != null && p2 != null && p1.x >= p2.x){
-					p1.x = p2.x - dx;
-					unchanged = false;
-				}
+		//Get deltas in each direction
+		int dx = (getWidth() - INPUT_WIDTH - 40) / depths.size();
+				
+		for(Map.Entry<Integer, ArrayList<Neuron>> entries : depths.entrySet()){
+			int dy = (getHeight() - 40) / entries.getValue().size();
+			int yOff = (getHeight() - dy * entries.getValue().size()) / 2;
+			int x = getWidth() - entries.getKey() * dx - 20;
+			for(int y = 0; y < entries.getValue().size(); y++){
+				nodes.get(entries.getValue().get(y)).setLocation(x, yOff + y * dy);
 			}
 		}
 		
+		//Setup inputs as a square (might want a feature to disable)
+		int sq = (int)Math.sqrt(network.inputsArr.size());
+		int d = (INPUT_WIDTH - 20) / sq;
+		int yOff = (getHeight() - d * sq) / 2;
 		for(int i = 0; i < network.inputsArr.size(); i++){
+			int x = i % sq;
+			int y = i / sq;
 			Point p = nodes.get(network.inputsArr.get(i));
 			if(p != null){
-				p.setLocation(10, i * getHeight() / network.inputsArr.size());
+				p.setLocation(10 + x * d, yOff + y * d);
+			}else{
+				p = new Point(10 + x * d, yOff + y * d);
+				nodes.put(network.inputsArr.get(i), p);
 			}
 		}
 				
 	}
 	
-	private void rec(Neuron n, int depth){
-		int x = getWidth() - depth * dx - dx;
+	private void getDepth(Neuron n, int depth){
 		if(!depths.containsKey(depth)){
-			depths.put(depth, 0);
+			depths.put(depth, new ArrayList<Neuron>());
 		}
-		int y = depths.get(depth) + dy;
-		depths.put(depth, y);
 		
-		if(nodes.containsKey(n)){
-			Point p = nodes.get(n);
-			if(p.getX() < x){
-				p.x = x;
-			}
-			if(n instanceof NeuronHidden){
-				for(Connection c : ((NeuronHidden)n).inputs){
-					rec(c.from, depth + 1);
-				}
+		if(nodes.containsKey(n)){ //Already encountered node
+			if(n.depth < depth){ //Add move it to next depth (right to left)
+				depths.get(n.depth).remove(n);
+				depths.get(depth).add(n);
+				n.depth = depth;
 			}
 		}else{
-			Point p = new Point(x, y);
-			nodes.put(n, p);
-			
+			nodes.put(n, new Point(0, 0)); //Default point
+			depths.get(depth).add(n);
+			n.depth = depth;
 			if(n instanceof NeuronHidden){
 				for(Connection c : ((NeuronHidden)n).inputs){
-					rec(c.from, depth + 1);
+					getDepth(c.from, depth + 1);
 				}
 			}
 		}
@@ -115,7 +118,7 @@ public class Screen2 extends JPanel {
 			}else{
 				g.setColor(Color.GREEN);
 			}	
-			
+						
 			g.fillOval(entry.getValue().x, entry.getValue().y, diameter, diameter);
 		}
 		

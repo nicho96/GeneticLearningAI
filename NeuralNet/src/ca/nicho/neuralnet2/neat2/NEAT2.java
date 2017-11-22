@@ -32,6 +32,7 @@ public abstract class NEAT2 {
 		ArrayList<NeuralNetwork2> clones = new ArrayList<NeuralNetwork2>();
 		for(NeuralNetwork2 nn : this.networks){
 			NeuralNetwork2 clone = new NeuralNetwork2(nn);
+			clone.simulated = false; //After mutation, network needs to be resimulated
 			this.mutate(clone);
 			clones.add(clone);
 
