@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Random;
 
 public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 	
@@ -28,7 +29,14 @@ public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 	public InnovationHandler ih;
 	public long maxInnovation = 0;
 	
-	public double score;
+	private double score;
+	public boolean simulated = false;
+	public boolean mutated = true;
+	
+	//Allows you to modify the rates of mutation. Must be handled by an evolver, outside of the NeuralNetwork class
+	//TODO Probably move this to a genome/species object eventually
+	public double[] mutationRates;
+	public double mutationRatesSum;
 	
 	/**
 	 * Creates a new network
@@ -50,7 +58,6 @@ public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 			outputs.put(out.innovation, out);
 			outputsArr.add(out);
 		}
-		
 	}
 	
 	/**
@@ -89,6 +96,17 @@ public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 			connectionsArr.add(c);
 		}
 		
+		//Retain the previously made mutationRates
+		this.mutationRates = parent.mutationRates.clone();
+		this.mutationRatesSum = parent.mutationRatesSum;
+		
+	}
+	
+	public void prepareMutationRates(Random r){
+		mutationRates = new double[]{r.nextDouble(), r.nextDouble(), r.nextDouble(), r.nextDouble()};
+		for(double d : mutationRates){
+			mutationRatesSum += d;
+		}
 	}
 		
 	/**
@@ -265,6 +283,16 @@ public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 		return buffer.array();
 	}
 	
+	public void setScore(double score){
+		this.simulated = true;
+		this.mutated = false;
+		this.score = score;
+	}
+	
+	public double getScore(){
+		return this.score;
+	}
+	
 	
 	@Override
 	public String toString(){
@@ -278,9 +306,9 @@ public class NeuralNetwork2 implements Comparable<NeuralNetwork2> {
 	@Override
 	public int compareTo(NeuralNetwork2 other) {
 		
-		if(this.score < other.score){
+		if(this.getScore() < other.getScore()){
 			return -1;
-		}else if(this.score > other.score){
+		}else if(this.getScore() > other.getScore()){
 			return 1;
 		}else{
 			if(this.connectionsArr.size() > other.connectionsArr.size()){

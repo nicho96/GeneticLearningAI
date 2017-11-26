@@ -58,8 +58,9 @@ public class ManualNEAT extends DefaultNEAT2 {
 	}
 	
 	private void initScreen(){
-		screen = new Screen2();
+		screen = new Screen2(800, 800);
 		screen.setNeuralNetwork(networks.get(0));
+		screen.startAutoDraw();
 		frame.add(screen);
 	}
 	

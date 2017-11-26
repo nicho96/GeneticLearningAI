@@ -1,6 +1,6 @@
 package ca.nicho.xor;
 
-import ca.nicho.gui.ManualNEAT;
+import ca.nicho.neat.DefaultNEAT;
 import ca.nicho.neuralnet2.NeuralNetwork2;
 import ca.nicho.neuralnet2.neat2.DefaultNEAT2;
 
@@ -8,7 +8,13 @@ public class XORAI {
 	
 	public static void main(String[] s) throws Exception{
 				
-		ManualNEAT neat = new ManualNEAT(2, 2, delegate);
+		
+
+		DefaultNEAT2 neat = DefaultNEAT2.loadFromFileDialog(10, delegate);
+		NeuralNetwork2 net = neat.getMaxNetwork();
+
+		double[] d = net.getOuputs();
+		
 		
 	}
 	

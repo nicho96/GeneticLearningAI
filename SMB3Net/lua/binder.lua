@@ -15,10 +15,17 @@ BoxRadius = 6
 InputSize = (BoxRadius*2+1)*(BoxRadius*2+1)
 OutputSize = #ButtonNames
 
-LastPostitionX = 0
-LastPostitionXUnchangedCount = 0
+LastPositionX = 0
+LastPositionXUnchangedCount = 0
 
 LastPositionY = 0
+AboveLevel = false
+InPit = false
+
+MaxFitness = 0
+FrameCount = 0
+Fitness = 0
+LastFitness = 0
 
 function getPositions()
     marioX = memory.readbyte(0x6D) * 0x100 + memory.readbyte(0x86)
@@ -103,14 +110,19 @@ end
 function updateJoypad(output)
 	controller = {}
 	for b = 1,#ButtonNames do
-			controller[ButtonNames[b]] = (output:sub(b, b) == "1")
+		controller[ButtonNames[b]] = (output:sub(b, b) == "1")
 	end
 	joypad.set(1, controller)
 end
  
 function restart()
-	LastPostition = 0
-	LastPostitionUnchangedCount = 0
+	LastPositionX = 0
+	LastPositionY = 0
+	InPit = false
+	AboveLevel = false
+	FrameCount = 0
+	LastPositionXUnchangedCount = 0
+	Fitness = 0
 	local obj = savestate.object(1)
 	savestate.load(obj)
 	clearJoypad()
@@ -143,29 +155,59 @@ end
 
 function fitnessPayload()
 	master:send("F")
-	master:send(tostring(marioX) .. "\n");
+	master:send(tostring(Fitness) .. "\n");
 end
 
---prepareConnection() 
+prepareConnection() 
 
 while true do
 		
+	FrameCount = FrameCount + 1	
+		
 	inputs = getInputs()
 
-	--inputsPayload(inputs)
-	--output = getOutputResponse()
-	--updateJoypad(output)
+	inputsPayload(inputs)
+	output = getOutputResponse()
+	updateJoypad(output)
+			
+	--Update current fitness
+	local DX = (marioX - LastPositionX) - 1
+	if DX >= 0 then
+		Fitness = Fitness + DX
+	end	
+		
+	--Update Max Fitness
+	if MaxFitness < Fitness then
+		MaxFitness = Fitness
+	end
 	
-	--Check if mario hasn't moved horizontally
-	if(LastPostitionX >= marioX) then
-		LastPostitionXUnchangedCount = LastPostitionXUnchangedCount + 1
+		--Check if mario hasn't moved horizontally
+	if LastPositionX >= marioX then
+		LastPositionXUnchangedCount = LastPositionXUnchangedCount + 1
 	else
-		LastPostitionX = marioX
+		LastPositionX = marioX
 	end	
 	
+	--Check if player is in a pit
+	if not AboveLevel then
+		if LastPositionY < 60 and marioY > 240 then
+			AboveLevel = true
+		elseif marioY > 240 then
+			InPit = true
+		end
+	elseif marioY < 60 then
+		AboveLevel = false
+	end
 	
+	LastPositionY = marioY
 
-	if LastPostitionXUnchangedCount >= 60 then
+	gui.text(10, 40, "Fitness " .. Fitness)
+	gui.text(100, 2, "Max Fitness " .. MaxFitness)
+	gui.text(10, 50, "Last Fitness: " .. LastFitness)
+
+	if LastPositionXUnchangedCount >= 60 or InPit then
+		LastFitness = Fitness
+		fitnessPayload()
 		restart()
 	end
 	

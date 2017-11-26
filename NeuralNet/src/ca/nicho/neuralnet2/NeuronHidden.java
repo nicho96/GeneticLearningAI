@@ -1,6 +1,7 @@
 package ca.nicho.neuralnet2;
 
 import java.util.ArrayList;
+import java.util.TreeSet;
 
 public class NeuronHidden extends Neuron {
 
@@ -20,13 +21,17 @@ public class NeuronHidden extends Neuron {
 	}
 
 	@Override
-	public boolean hasInput(Neuron n){
+	public boolean hasInput(Neuron n, TreeSet<Long> visited){
 		if(this == n){
 			return true;
 		}
+		
+		visited.add(this.innovation);
 				
 		for(Connection con : inputs){
-			if(con.from.hasInput(n)){
+			if(visited.contains(con.from.innovation))
+				continue;
+			if(con.from.hasInput(n, visited)){
 				return true;
 			}
 		}

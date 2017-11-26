@@ -1,5 +1,6 @@
 package ca.nicho.smb3net;
 
+import java.awt.Dimension;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -8,9 +9,9 @@ import java.io.IOException;
 import javax.swing.JFrame;
 
 import ca.nicho.neuralnet2.NeuralNetwork2;
+import ca.nicho.neuralnet2.Neuron;
 import ca.nicho.neuralnet2.Screen2;
 import ca.nicho.neuralnet2.neat2.DefaultNEAT2;
-import ca.nicho.neuralnet2.neat2.SpeciationNEAT2;
 
 public class SMBEvolver {
 
@@ -19,6 +20,9 @@ public class SMBEvolver {
 	private final int inputSize;
 	private final int outputSize;
 	private final Screen2 screen;
+	private DefaultNEAT2 neat;
+	
+	private final File POOL_PATH = new File("pool/" + System.currentTimeMillis());
 	
 	public SMBEvolver(DataInputStream stream, DataOutputStream out) throws IOException {
 		
@@ -26,23 +30,26 @@ public class SMBEvolver {
 		this.out = out;
 		this.inputSize = getInputSize();
 		this.outputSize = getOutputSize();
-		this.screen = new Screen2();
+		this.screen = new Screen2(800, 600);
 		
 		initFrame();
 		
-		DefaultNEAT2 neat = new DefaultNEAT2(inputSize, outputSize, delegate, 100);
+		//neat = DefaultNEAT2.loadFromFileDialog(50, delegate);
+		neat = new DefaultNEAT2(inputSize, outputSize, delegate, 50);
 		
 		int generation = 0;
 		while(true){
 			generation++;
-			System.out.println("==== Current Generation: " + generation + " Max: " + neat.getMaxNetwork().score + " ====");
+			System.out.println("==== Current Generation: " + generation + " Max: " + neat.getMaxNetwork().getScore() + " ====");
 			neat.nextGeneration();
 			for(NeuralNetwork2 net: neat.networks.subList(0, (neat.networks.size() >= 5) ? 5 : neat.networks.size())){
-				System.out.print("{" + net.score + " " + neat.getVariation(neat.getMaxNetwork(), net) + "} ");
+				System.out.print(net.getScore() + " ");
+				net.simulated = false; //Ensures first 5 networks are simulated
 			}
 			System.out.println();
 			try {
-				neat.getMaxNetwork().save(new File(new File("networks"), "test2.dat"));
+				neat.getMaxNetwork().save(new File(new File("networks"), "best.dat"));
+				neat.saveNetworkPool(new File(POOL_PATH, generation + ".pool"));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -56,8 +63,9 @@ public class SMBEvolver {
 		frame.getContentPane().setLayout(null);
 		frame.setFocusable(false);
 		frame.setVisible(true);	
-		frame.setSize(600, 600);
+		frame.setPreferredSize(new Dimension(800, 600));
 		frame.add(screen);
+		frame.pack();
 	}
 	
 	private int getInputSize() throws IOException{
@@ -88,6 +96,8 @@ public class SMBEvolver {
 	
 	private void readFrame(NeuralNetwork2 nn) throws IOException{
 		
+		screen.cornerText = (neat.networks.indexOf(nn) + 1) + " of " + neat.networks.size();
+		
 		while(true){
 						
 			char c = (char)stream.read();
@@ -106,12 +116,17 @@ public class SMBEvolver {
 				
 				activationID = (activationID + 1) % 2;
 				
+				for(Neuron n : nn.inputsArr){
+					n.getValue(activationID);
+				}
+				
 				//Return the output data
 				for(int i = 0; i < outputSize; i++){
 					char output = (nn.outputsArr.get(i).getValue(activationID) > 0.5) ? '1' : '0';
 					out.write(output);
 				}
-				out.write((byte)'\n');
+				out.write((byte)'\n');				
+				screen.repaint();
 				
 				continue;
 			}
@@ -127,16 +142,19 @@ public class SMBEvolver {
 					fitnessStr += d;
 				}
 				int fitness = Integer.parseInt(fitnessStr);
-				System.out.println(nn.hashCode() + " Network's Fitness: " + fitness);
-				nn.score = fitness;
+				nn.setScore(fitness);
+				screen.repaint();
+							
 				break;
 			}
 		}
+				
 	}
 	
 	private DefaultNEAT2.SimulateDelegate delegate = (NeuralNetwork2 nn) -> {
 		try {
 			this.screen.setNeuralNetwork(nn);
+			this.screen.repaint();
 			this.readFrame(nn);
 		}catch(IOException e){
 			e.printStackTrace();

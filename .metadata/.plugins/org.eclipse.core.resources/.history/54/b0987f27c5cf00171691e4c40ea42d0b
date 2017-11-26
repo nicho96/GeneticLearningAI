@@ -1,0 +1,155 @@
+package ca.nicho.neuralnet2;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.JPanel;
+
+public class Screen2 extends JPanel {
+
+	private NeuralNetwork2 network;
+	
+	public HashMap<Integer, ArrayList<Neuron>> depths;
+	public HashMap<Neuron, Point> nodes;
+	
+	public static final int HIDDEN_WIDTH = 400;
+
+	public Screen2(){
+		this.setSize(600, 500);
+		this.setBackground(new Color(0xA4A4A4));
+	}
+	
+	public void startAutoDraw(){
+		new Thread(drawThread).start();
+	}
+	
+	public int diameter = 8;
+	
+	public void setNeuralNetwork(NeuralNetwork2 network){
+		
+		this.nodes = new HashMap<Neuron, Point>();
+		this.depths = new HashMap<Integer, ArrayList<Neuron>>();
+		this.network = network;
+		
+		//Start from outputs
+		for(NeuronHidden n : network.outputsArr){
+			getDepth(n, 0);
+		}
+		
+		//Get deltas in each direction
+		int dx = (HIDDEN_WIDTH - 40) / depths.size();
+				
+		for(Map.Entry<Integer, ArrayList<Neuron>> entries : depths.entrySet()){
+			int dy = (getHeight() - 40) / entries.getValue().size();
+			int x = getWidth() - entries.getKey() * dx - 20;
+			for(int y = 0; y < entries.getValue().size(); y++){
+				nodes.get(entries.getValue().get(y)).setLocation(x, y * dy + 20);
+			}
+		}
+		
+		//Setup inputs as a square (might want a feature to disable)
+		int sq = (int)Math.sqrt(network.inputsArr.size());
+		int d = (getWidth() - HIDDEN_WIDTH) / sq;
+		int yOff = d * sq / 2;
+		for(int i = 0; i < network.inputsArr.size(); i++){
+			int x = i % sq;
+			int y = i / sq;
+			Point p = nodes.get(network.inputsArr.get(i));
+			if(p != null){
+				p.setLocation(x * d, yOff + y * d);
+			}else{
+				p = new Point(x * d, yOff + y * d);
+				nodes.put(network.inputsArr.get(i), p);
+			}
+		}
+				
+	}
+	
+	private void getDepth(Neuron n, int depth){
+		if(!depths.containsKey(depth)){
+			depths.put(depth, new ArrayList<Neuron>());
+		}
+		
+		if(nodes.containsKey(n)){ //Already encountered node
+			if(n.depth < depth){ //Add move it to next depth (right to left)
+				depths.get(n.depth).remove(n);
+				depths.get(depth).add(n);
+				n.depth = depth;
+			}
+		}else{
+			nodes.put(n, new Point(0, 0)); //Default point
+			depths.get(depth).add(n);
+			n.depth = depth;
+			if(n instanceof NeuronHidden){
+				for(Connection c : ((NeuronHidden)n).inputs){
+					getDepth(c.from, depth + 1);
+				}
+			}
+		}
+		
+	}
+	
+	@Override
+	public void paintComponent(Graphics g){
+		super.paintComponent(g);
+		drawNetwork(g);
+	}
+	
+	public void drawNetwork(Graphics g2){		
+		
+		if(this.network == null){
+			return;
+		}
+		
+		Graphics2D g = (Graphics2D)g2;
+		g.setStroke(new BasicStroke(1));
+						
+		//Draw neurons
+		for(Map.Entry<Neuron, Point> entry : nodes.entrySet()){
+			if(entry.getKey().cachedActivation < NeuralNetwork2.ACTIVATION_THRESHOLD){
+				g.setColor(Color.RED);
+			}else{
+				g.setColor(Color.GREEN);
+			}	
+						
+			g.fillOval(entry.getValue().x, entry.getValue().y, diameter, diameter);
+		}
+		
+		for(Connection con: network.connectionsArr){
+			if(con.weight < 0){
+				g.setColor(Color.RED);
+			}else{
+				g.setColor(Color.GREEN);
+			}
+			Point p1 = nodes.get(con.from);
+			Point p2 = nodes.get(con.to);
+			if(p1 != null && p2 != null)
+				g.drawLine(p1.x + diameter / 2, p1.y + diameter / 2, p2.x + diameter / 2, p2.y + diameter / 2);
+		}
+	}
+	
+	public NeuralNetwork2 getNetwork(){
+		return network;
+	}
+	
+	public Runnable drawThread = new Runnable() {
+		public void run(){
+			long last = System.currentTimeMillis();
+			
+			while(true){
+				long current = System.currentTimeMillis();
+				if(current - last > 100){
+					repaint();
+					last = current;
+				}
+			}
+		}
+	};
+	
+}

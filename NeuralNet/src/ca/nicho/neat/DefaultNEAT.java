@@ -19,7 +19,7 @@ import ca.nicho.neuralnet.Neuron;
 public class DefaultNEAT extends NEAT {
 
 	public static final double DEVIATION_THRESHOLD = 0;
-	public static boolean VERBOSE = true;
+	public static boolean VERBOSE = false;
 	
 	protected int speciesCapacity = 100;
 	protected Random random = new Random();

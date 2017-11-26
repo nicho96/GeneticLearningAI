@@ -1,9 +1,13 @@
 package ca.nicho.neuralnet2;
 
+import java.util.TreeSet;
+
 public abstract class Neuron extends Gene {
 	
 	protected int activationID;
 	public double cachedActivation;
+	
+	public int depth;
 	
 	public Neuron(long innovation){
 		this.innovation = innovation;
@@ -30,6 +34,6 @@ public abstract class Neuron extends Gene {
 		return "N{i:" + innovation + "}";
 	}
 	
-	public abstract boolean hasInput(Neuron n);
+	public abstract boolean hasInput(Neuron n, TreeSet<Long> visited);
 	
 }

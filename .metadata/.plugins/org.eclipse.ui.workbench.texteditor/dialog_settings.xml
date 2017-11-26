@@ -2,29 +2,29 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="lastColor" key="selection"/>
+		<item value="" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
+			<item value="0.1"/>
+			<item value="crossover"/>
+			<item value="getVariation"/>
+			<item value="fitness"/>
+			<item value="compar"/>
+			<item value="Green"/>
 			<item value="lastColor"/>
 			<item value="not found to be simi"/>
-			<item value="colors.put"/>
-			<item value="colors"/>
-			<item value="colors.add"/>
-			<item value="DEVIATION"/>
-			<item value="vari"/>
-			<item value="variationTh"/>
 		</list>
 		<list key="replacehistory">
 			<item value="NeuralNetwork2"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
-		<item value="290" key="DIALOG_WIDTH"/>
-		<item value="1|.SF NS Text|11.0|0|COCOA|1|.SFNSText" key="DIALOG_FONT_NAME"/>
-		<item value="409" key="DIALOG_HEIGHT"/>
+		<item value="257" key="DIALOG_WIDTH"/>
+		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
+		<item value="381" key="DIALOG_HEIGHT"/>
 		<item value="1093" key="DIALOG_X_ORIGIN"/>
 		<item value="138" key="DIALOG_Y_ORIGIN"/>
 	</section>

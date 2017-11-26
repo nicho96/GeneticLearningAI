@@ -1,9 +1,0 @@
-package ca.nicho.smb3net;
-
-public class SMBEvolver {
-
-	public SMBEvolver(){
-		
-	}
-	
-}

@@ -1,0 +1,153 @@
+package ca.nicho.smb3net;
+
+import java.awt.Dimension;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+
+import javax.swing.JFrame;
+
+import ca.nicho.neuralnet2.NeuralNetwork2;
+import ca.nicho.neuralnet2.Screen2;
+import ca.nicho.neuralnet2.neat2.DefaultNEAT2;
+import ca.nicho.neuralnet2.neat2.SpeciationNEAT2;
+
+public class SMBEvolver {
+
+	private final DataInputStream stream;
+	private final DataOutputStream out;
+	private final int inputSize;
+	private final int outputSize;
+	private final Screen2 screen;
+	
+	public SMBEvolver(DataInputStream stream, DataOutputStream out) throws IOException {
+		
+		this.stream = stream;
+		this.out = out;
+		this.inputSize = getInputSize();
+		this.outputSize = getOutputSize();
+		this.screen = new Screen2(800, 600);
+		
+		initFrame();
+		
+		DefaultNEAT2 neat = new DefaultNEAT2(inputSize, outputSize, delegate, 100);
+		
+		int generation = 0;
+		while(true){
+			generation++;
+			System.out.println("==== Current Generation: " + generation + " Max: " + neat.getMaxNetwork().getScore() + " ====");
+			neat.nextGeneration();
+			for(NeuralNetwork2 net: neat.networks.subList(0, (neat.networks.size() >= 5) ? 5 : neat.networks.size())){
+				net.simulated = false; //Ensures first 5 networks are simulated
+			}
+			try {
+				neat.getMaxNetwork().save(new File(new File("networks"), "best.dat"));
+				neat.saveNetworkPool(new File("pool/" + System.currentTimeMillis() + "/" + generation + ".pool"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	private final void initFrame(){
+		JFrame frame = new JFrame();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //TODO may want to save the state of the AI
+		frame.getContentPane().setLayout(null);
+		frame.setFocusable(false);
+		frame.setVisible(true);	
+		frame.setPreferredSize(new Dimension(800, 600));
+		frame.add(screen);
+		frame.pack();
+	}
+	
+	private int getInputSize() throws IOException{
+		String inputStr = "";
+		while(true){
+			char c = (char)stream.read();
+			if(c == '\n')
+				break;
+			
+			inputStr += c;
+		}
+		return Integer.parseInt(inputStr);
+	}
+	
+	private int getOutputSize() throws IOException{
+		String outputStr = "";
+		while(true){
+			char c = (char)stream.read();
+			if(c == '\n')
+				break;
+			
+			outputStr += c;
+		}
+		return Integer.parseInt(outputStr);
+	}
+	
+	private int activationID = 0;
+	
+	private void readFrame(NeuralNetwork2 nn) throws IOException{
+		
+		while(true){
+						
+			char c = (char)stream.read();
+			
+			//INPUT DATA PAYLOAD
+			if(c == 'I'){
+				
+				//Get the input data
+				double[] data = new double[inputSize];
+				for(int i = 0; i < inputSize; i++){
+					char d = (char)stream.read();
+					data[i] = (byte)((d == 'b') ? 1 : (d == 'e') ? -1 : 0);
+				}		
+				
+				nn.setInputs(data);
+				
+				activationID = (activationID + 1) % 2;
+				
+				//Return the output data
+				for(int i = 0; i < outputSize; i++){
+					char output = (nn.outputsArr.get(i).getValue(activationID) > 0.5) ? '1' : '0';
+					out.write(output);
+				}
+				out.write((byte)'\n');
+				
+				continue;
+			}
+			
+			//FITNESS PAYLOAD (also means we need to move to the next generation)
+			if(c == 'F'){
+				String fitnessStr = "";
+				while(true){
+					char d = (char)stream.read();
+					if(d == '\n')
+						break;
+					
+					fitnessStr += d;
+				}
+				int fitness = Integer.parseInt(fitnessStr);
+				System.out.println(nn.hashCode() + " Network's Fitness: " + fitness);
+				nn.setScore(fitness);
+				break;
+			}
+		}
+		
+		screen.repaint();
+		
+	}
+	
+	private DefaultNEAT2.SimulateDelegate delegate = (NeuralNetwork2 nn) -> {
+		try {
+			this.screen.setNeuralNetwork(nn);
+			this.readFrame(nn);
+			System.out.println("TEST");
+		}catch(IOException e){
+			e.printStackTrace();
+			System.exit(-1);
+		}
+	};
+	
+}

@@ -1,5 +1,11 @@
 package ca.nicho.neuralnet2.neat2;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -7,10 +13,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import javax.swing.JFileChooser;
 
 import ca.nicho.neat.DefaultNEAT;
 import ca.nicho.neuralnet2.Connection;
@@ -29,7 +38,7 @@ public class DefaultNEAT2 extends NEAT2 {
 
 	public static double[] W = {1, 1, 1};
 	public static final double DEVIATION_THRESHOLD = 0.3;
-	public static boolean VERBOSE = true;
+	public static boolean VERBOSE = false;
 	
 	protected int speciesCapacity;
 	protected Random random = new Random();
@@ -37,24 +46,59 @@ public class DefaultNEAT2 extends NEAT2 {
 	
 	private static ExecutorService exec = Executors.newFixedThreadPool(1);
 	
+	public DefaultNEAT2(File pool, int speciesCapacity, SimulateDelegate simulateDelegate) throws IOException {
+		
+		this.speciesCapacity = speciesCapacity;
+		this.simulateDelegate = simulateDelegate;
+		
+		DataInputStream in = new DataInputStream(new FileInputStream(pool));
+		int networksCount = in.readInt();
+		
+		for(int i = 0; i < networksCount; i++){
+			int inputSize = in.readInt();
+			int outputSize = in.readInt();
+			long currentInnovation = in.readLong();
+			int genesSize = in.readInt();
+			byte[] dna = new byte[genesSize * 33];
+			in.read(dna);
+			NeuralNetwork2 net = NeuralNetwork2.createFromDNA(inputSize, outputSize, dna);
+			net.ih.setInnovation(currentInnovation);
+			net.prepareMutationRates(random);
+			networks.add(net);
+		}
+		
+		in.close();
+		
+		this.verbose("Loaded Network Pool");
+				
+		
+	}
+	
 	public DefaultNEAT2(int inputSize, int outputSize, SimulateDelegate simulateDelegate, int speciesCapacity){
 		this.speciesCapacity = speciesCapacity;
 		NeuralNetwork2 origin = new NeuralNetwork2(new InnovationHandler(), inputSize, outputSize);
-		this.mutate(origin); //Give it an initial mutation, increases variation early on
-		
+		origin.prepareMutationRates(random);
 		networks.add(origin);
 		for(int i = 0; i < speciesCapacity - 1; i++){
-			networks.add(new NeuralNetwork2(origin));
+			NeuralNetwork2 nn = new NeuralNetwork2(origin);
+			nn.prepareMutationRates(random);
+			networks.add(nn);
 		}
 		
 		//Start with mutated networks
 		for(NeuralNetwork2 nn : networks){
 			this.mutate(nn);
+			nn.mutated = true;
 		}
 		
 		this.simulateDelegate = simulateDelegate;
 	}
 	
+	@Override
+	public void mutateGeneration(){
+		super.mutateGeneration();
+		verbose("Mutated Generation");
+	}
 	
 	@Override
 	protected void crossoverGeneration() {
@@ -67,6 +111,7 @@ public class DefaultNEAT2 extends NEAT2 {
 			}
 			if(getVariation(nn1, nn2) > DEVIATION_THRESHOLD){
 				NeuralNetwork2 child = this.crossover(nn1, nn2);
+				
 				this.mutate(child);
 				this.networks.add(child);
 			}
@@ -77,10 +122,15 @@ public class DefaultNEAT2 extends NEAT2 {
 
 	@Override
 	protected void simulateGeneration() {
+		int skipped = 0;
 		ArrayList<Future<?>> futures = new ArrayList<Future<?>>();
 		for(NeuralNetwork2 nn : networks){
-			Runnable r = () -> simulateDelegate.simulateNetwork(nn);
-			futures.add(exec.submit(r));
+			if(!nn.simulated){
+				Runnable r = () -> simulateDelegate.simulateNetwork(nn);
+				futures.add(exec.submit(r));
+			}else{
+				skipped++;
+			}
 		}
 		
 		try {
@@ -92,21 +142,29 @@ public class DefaultNEAT2 extends NEAT2 {
 		} catch (ExecutionException e) {
 			e.printStackTrace();
 		}
-		this.verbose("Simulated generation.");
+		this.verbose("Simulated generation. Skipped " + skipped + " networks.");
 	}
 
 	@Override
 	protected void mutate(NeuralNetwork2 nn) {
 		
-		for(int j = 0; j < nn.connections.size() * 0.1 + 1; j++){
-			while(!this.selectMutation(nn));
+		//Either increment the mutation rate or decrease it by a factor
+		for(int i = 0; i < nn.mutationRates.length; i++){
+			nn.mutationRates[i] = nn.mutationRates[i] * ((random.nextInt(2) == 1) ? 0.95 : 1.05263); //Factors taken from Sethbling's MarI/O
+		}
+		
+		verbose("Mutating Network");
+		for(int j = 0; j < nn.connections.size() * 0.05 + 1; j++){
+			while(!this.selectMutation(nn)){
+				verbose("FAILED MUTATION");
+			}
 		}
 				
 	}
 
 	protected NeuralNetwork2 crossover(NeuralNetwork2 n1, NeuralNetwork2 n2){
 		
-		if(n1.score > n2.score){
+		if(n1.getScore() > n2.getScore()){
 			NeuralNetwork2 tmp = n2;
 			n2 = n1;
 			n1 = tmp;
@@ -176,7 +234,7 @@ public class DefaultNEAT2 extends NEAT2 {
 				cache.put(to.innovation, to);
 			}
 			
-			if(!from.hasInput(to)){
+			if(!from.hasInput(to, new TreeSet<Long>())){
 				child.makeConnection(from, to, weight).enabled = enabled;
 			}
 			
@@ -204,7 +262,7 @@ public class DefaultNEAT2 extends NEAT2 {
 				cache.put(to.innovation, to);
 			}
 			
-			if(!from.hasInput(to)){
+			if(!from.hasInput(to, new TreeSet<Long>())){
 				child.makeConnection(from, to, c.weight).enabled = c.enabled;
 			}
 			
@@ -218,10 +276,11 @@ public class DefaultNEAT2 extends NEAT2 {
 	protected void selection() {
 		Collections.sort(networks);
 		Collections.reverse(networks);
+		
 		//Removes the weakest species after the capacity
 		if(networks.size() > this.speciesCapacity){
 			List<NeuralNetwork2> sub = networks.subList(speciesCapacity, networks.size());
-			this.verbose("Cleared " + sub.size() + " networks. Max: " + sub.get(0).score);
+			this.verbose("Cleared " + sub.size() + " networks. Max: " + sub.get(0).getScore());
 			sub.clear();
 		}
 	}
@@ -232,17 +291,31 @@ public class DefaultNEAT2 extends NEAT2 {
 	 * @return true if a mutation occures, false if not.
 	 */
 	private boolean selectMutation(NeuralNetwork2 nn){
-		double r = random.nextDouble();
 		
-		if(r < 0.25){
-			return this.randomNeuronConnection(nn);
-		}else if(r < 0.50){
-			return this.randomAxonWeightChange(nn);
-		}else if(r < 0.75){
-			return this.splitRandomConnection(nn);
+		double r = random.nextDouble() * nn.mutationRatesSum;
+		
+		if(r < nn.mutationRates[0]){
+			verbose("Attempt Random Neuron Connection");
+			if(this.randomNeuronConnection(nn)){
+				return true;
+			}
+		}else if(r < nn.mutationRates[0] + nn.mutationRates[1]){
+			verbose("Attempt Random Axon Weight");
+			if(this.randomAxonWeightChange(nn)){
+				return true;
+			}
+		}else if(r < nn.mutationRates[0] + nn.mutationRates[1] + nn.mutationRates[2]){
+			verbose("Attempt Random Connection Split");
+			if(this.splitRandomConnection(nn)){
+				return true;
+			}
 		}else{
-			return this.randomAxonToggle(nn);
+			verbose("Attempt Random Axon Toggle");
+			if(this.randomAxonToggle(nn)){
+				return true;
+			}
 		}
+		return false;
 	}
 	
 	private boolean splitRandomConnection(NeuralNetwork2 nn){
@@ -288,9 +361,11 @@ public class DefaultNEAT2 extends NEAT2 {
 		}
 		
 		//Recursively checks if this connection will cause a loop
-		if(from.hasInput(to)){
+		verbose("Starting recursive check for loops");
+		if(from.hasInput(to, new TreeSet<Long>())){
 			return false;
 		}
+		verbose("No loops found");
 		
 		nn.makeConnection(from, to, random.nextDouble() * 2 - 1);
 		
@@ -350,7 +425,7 @@ public class DefaultNEAT2 extends NEAT2 {
 	}
 	
 	protected void verbose(String message){
-		if(DefaultNEAT.VERBOSE)
+		if(DefaultNEAT2.VERBOSE)
 			System.out.println("\t" + message);
 	}
 	
@@ -361,6 +436,38 @@ public class DefaultNEAT2 extends NEAT2 {
 	 */
 	public NeuralNetwork2 getMaxNetwork(){
 		return this.networks.get(0);
+	}
+	
+	public void saveNetworkPool(File f) throws IOException {
+		
+		if(!f.exists()){
+			f.getParentFile().mkdirs();
+			f.createNewFile();
+		}
+		
+		DataOutputStream out = new DataOutputStream(new FileOutputStream(f));
+		
+		out.writeInt(networks.size());
+		
+		for(NeuralNetwork2 n: networks){
+			out.writeInt(n.inputsArr.size());
+			out.writeInt(n.outputsArr.size());
+			out.writeLong(n.ih.currentInnovation());
+			out.writeInt(n.connectionsArr.size());
+			out.write(n.toByteDNA());
+		}
+		
+		out.close();
+	}
+	
+	public static DefaultNEAT2 loadFromFileDialog(int speciesCapacity, SimulateDelegate delegate) throws IOException {
+		JFileChooser chooser = new JFileChooser();
+		File workingDirectory = new File(System.getProperty("user.dir"));
+		chooser.setCurrentDirectory(workingDirectory);
+		chooser.showOpenDialog(null);
+		File f = chooser.getSelectedFile();
+		DefaultNEAT2 neat = new DefaultNEAT2(f, speciesCapacity, delegate);
+		return neat;
 	}
 	
 	@FunctionalInterface
